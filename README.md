@@ -19,5 +19,3 @@ Sou um(a) entusiasta da programação e estou sempre buscando aprender e aplicar
 
 --- 
 
-_Este README foi gerado como parte de um exercício prático._
-
