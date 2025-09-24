@@ -42,14 +42,14 @@ async def get_receita_by_id(receita_id: int):
     for receita in receitas:
         if receita.id == receita_id:
             return receita
-    return {"message": "Receita não encontrada"}
+    return {"menssagem": "Receita não encontra"}
 
 @app.get("/receitas/nome/{receita_nome}")
 async def get_receita_by_name(receita_nome: str):
     for receita in receitas:
         if receita.nome.lower() == receita_nome.lower():
             return receita
-    return {"message": "Receita não encontrada"}
+    return {"menssagem": "Receita não encontrada"}
 
 
 
@@ -59,7 +59,7 @@ async def create_receita(receita: Receita):
     # Validação de nome existente (case-insensitive)
     for r in receitas:
         if r.nome.lower() == receita.nome.lower():
-            return {"message": "Receita com este nome já existe"}
+            return {"menssagem": "Receita com este nome já existe"}
 
     # Validação de tamanho do nome (2 a 50 caracteres)
     if not (2 <= len(receita.nome) <= 50):
