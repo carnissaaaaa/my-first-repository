@@ -16,10 +16,6 @@ Sou um(a) entusiasta da programação e estou sempre buscando aprender e aplicar
 
 - **API de Receitas:** Uma API desenvolvida com FastAPI para gerenciar receitas, incluindo operações CRUD e validações. (Este projeto)
 
-## Conecte-se Comigo
-
-[LinkedIn](https://www.linkedin.com/in/seu-perfil-linkedin) (Substitua pelo seu link do LinkedIn)
-[Twitter](https://twitter.com/seu-usuario-twitter) (Substitua pelo seu link do Twitter)
 
 --- 
 
