@@ -1,6 +1,7 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
-from typing import List, Optional
+from http import HTTPStatus
+from schema import Receita, BaseReceita
+from typing import List
 
 app = FastAPI()
 
@@ -12,11 +13,7 @@ async def read_root():
 async def read_aluno(nome_aluno: str):
     return {"aluno": nome_aluno}
 
-class Receita(BaseModel):
-    id: Optional[int] = None
-    nome: str
-    ingredientes: List[str]
-    modo_de_preparo: str
+
 
 receitas: List[Receita] = [
     Receita(id=1, nome="Bolo de Chocolate", ingredientes=["farinha", "açúcar", "chocolate em pó", "ovos", "leite", "óleo"], modo_de_preparo="Misture tudo e asse."),
@@ -27,7 +24,7 @@ receitas: List[Receita] = [
     Receita(id=6, nome="Pão de Queijo", ingredientes=["polvilho doce", "queijo minas", "leite", "óleo", "ovos", "sal"], modo_de_preparo="Misture os ingredientes, faça bolinhas e asse.")
 ]
 
-@app.get("/receitas")
+@app.get("/receitas", status_code=HTTPStatus.OK)
 async def get_receitas():
     return receitas
 
@@ -47,9 +44,8 @@ async def get_receita_by_name(receita_nome: str):
 
 
 
-
-@app.post("/receitas")
-async def create_receita(receita: Receita):
+@app.post("/receitas", status_code=HTTPStatus.CREATED)
+async def create_receita(receita: BaseReceita):
     for r in receitas:
         if r.nome.lower() == receita.nome.lower():
             return {"menssagem": "Receita com este nome já existe"}
@@ -71,8 +67,8 @@ async def create_receita(receita: Receita):
 
 
 
-@app.put("/receitas/{receita_id}")
-async def update_receita(receita_id: int, receita: Receita):
+@app.put("/receitas/{receita_id}", status_code=HTTPStatus.OK)
+async def update_receita(receita_id: int, receita: BaseReceita):
     found_index = -1
     for i, r in enumerate(receitas):
         if r.id == receita_id:
@@ -103,8 +99,7 @@ async def update_receita(receita_id: int, receita: Receita):
 
 
 
-
-@app.delete("/receitas/{receita_id}")
+@app.delete("/receitas/{receita_id}", status_code=HTTPStatus.OK)
 async def delete_receita(receita_id: int):
     if not receitas:
         return {"message": "Não há receitas para excluir."}
