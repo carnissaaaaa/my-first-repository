@@ -1,9 +1,13 @@
 from fastapi import FastAPI, HTTPException 
 from http import HTTPStatus
-from schema import Receita, BaseReceita
+from schema import Receita, Usuario, BaseReceita, BaseUsuario, UsuarioPublic
 from typing import List
 
 app = FastAPI()
+
+usuarios: List[Usuario] = []
+
+receitas: List[Receita] = []
 
 @app.get("/")
 async def read_root():
@@ -112,10 +116,23 @@ async def delete_receita(receita_id: int):
             deleted_receita = r
             break
 
-    if found_index == -1:
-        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Receita não encontrada")
+        if found_index == -1:
+            raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Receita não encontrada")
 
     receitas.pop(found_index)
     return {"message": f"Receita '{deleted_receita.nome}' (ID: {deleted_receita.id}) foi deletada com sucesso."}
 
+@app.post("/usuarios", response_model=UsuarioPublic, status_code=HTTPStatus.CREATED)
+async def create_usuario(dados: BaseUsuario):
+    for r in receitas:
+        if r.email == usuarios.email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Já existe um usuário cadastrado com este email."
+            )
+            
+@app.get("/usuarios", status_code=HTTPException.OK, response_model=List[UsuarioPublic])
+def get_todos_usuarios():
+    
+@app.get("/usuarios/{nome_usuario}", )
 
