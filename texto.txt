@@ -1,0 +1,4 @@
+ for receita in receitas:
+        if receita.nome.lower() == receita_nome.lower():
+            return receita
+    raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Receita não encontrada")
