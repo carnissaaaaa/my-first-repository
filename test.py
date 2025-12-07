@@ -1,15 +1,9 @@
-from fastapi import FastAPI
-from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
+from models import User
+from database import create_db_and_tables, engine
 
-from models import User, table_registry
-
-app = FastAPI(title='API de teste')
-
-engine = create_engine("sqlite:///:memory", echo=False)
-
-
-table_registry.metadata.create_all(engine)
+# Cria as tabelas no banco de dados em memória
+create_db_and_tables()
 
 with Session(engine) as session:
     aluno = User(
@@ -22,3 +16,4 @@ with Session(engine) as session:
 print("DADOS DO USUÁRIO:", aluno)
 print("ID:", aluno.id)
 print("Criado em:", aluno.created_at)
+print("Atualizado em:", aluno.updated_at)

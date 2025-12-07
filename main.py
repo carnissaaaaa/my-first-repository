@@ -1,20 +1,16 @@
-from fastapi import FastAPI, HTTPException 
+from fastapi import FastAPI, HTTPException, Depends 
 from http import HTTPStatus
-from schema import Receita, Usuario, BaseReceita, BaseUsuario, UsuarioPublic
 from typing import List
+from sqlalchemy.orm import Session
+from sqlalchemy import select
+
+from schema import Receita, BaseReceita, BaseUsuario, UsuarioPublic
+from models import User
+from database import get_db
 
 app = FastAPI()
 
-@app.get("/")
-async def read_root():
-    return {"message": "Hello World"}
-
-@app.get("/alunos/{nome_aluno}")
-async def read_aluno(nome_aluno: str):
-    return {"aluno": nome_aluno}
-
-usuarios: List[Usuario] = []
-
+# Variáveis em memória para Receitas (Mantidas conforme sua instrução)
 receitas: List[Receita] = [
     Receita(id=1, nome="Bolo de Chocolate", ingredientes=["farinha", "açúcar", "chocolate em pó", "ovos", "leite", "óleo"], modo_de_preparo="Misture tudo e asse."),
     Receita(id=2, nome="Brigadeiro", ingredientes=["leite condensado", "chocolate em pó", "manteiga"], modo_de_preparo="Misture no fogo até desgrudar da panela."),
@@ -24,6 +20,7 @@ receitas: List[Receita] = [
     Receita(id=6, nome="Pão de Queijo", ingredientes=["polvilho doce", "queijo minas", "leite", "óleo", "ovos", "sal"], modo_de_preparo="Misture os ingredientes, faça bolinhas e asse.")
 ]
 
+# Rotas de Receitas (Mantidas conforme sua instrução)
 @app.get("/receitas", response_model=List[Receita], status_code=HTTPStatus.OK)
 async def get_receitas():
     return receitas
@@ -99,7 +96,6 @@ async def update_receita(receita_id: int, receita: BaseReceita):
     return receita
 
 
-
 @app.delete("/receitas/{receita_id}",response_model=Receita, status_code=HTTPStatus.OK)
 async def delete_receita(receita_id: int):
     if not receitas:
@@ -112,94 +108,131 @@ async def delete_receita(receita_id: int):
             deleted_receita = r
             break
 
-        if found_index == -1:
-            raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Receita não encontrada")
+    if found_index == -1:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Receita não encontrada")
 
     receitas.pop(found_index)
     return {"message": f"Receita '{deleted_receita.nome}' (ID: {deleted_receita.id}) foi deletada com sucesso."}
 
+# Rotas de Usuários (Corrigidas para usar SQLAlchemy)
+
+# Rota POST para criar um novo usuário
 @app.post("/usuarios", response_model=UsuarioPublic, status_code=HTTPStatus.CREATED)
-async def create_usuario(dados: BaseUsuario):
-    for u in usuarios:
-        if u.email == dados.email:
-            raise HTTPException(status_code=HTTPStatus.CONFLICT, detail="Já existe um usuário cadastrado com este email.")
-            
-    if len(usuarios) > 0:
-        novo_id = usuarios[-1].id + 1
-    else:
-        novo_id = 1
-        
-    novo_usuario = Usuario(
-        id=novo_id,
+def create_usuario(dados: BaseUsuario, db: Session = Depends(get_db)):
+    # 1. Validação de e-mail duplicado (Requisito: Email único)
+    existing_user = db.scalar(select(User).where(User.email == dados.email))
+    if existing_user:
+        raise HTTPException(
+            status_code=HTTPStatus.CONFLICT,
+            detail="Já existe um usuário cadastrado com este email."
+        )
+
+    # 2. Criação do objeto User
+    novo_usuario = User(
         nome_usuario=dados.nome_usuario,
         email=dados.email,
-        senha=dados.senha
+        senha=dados.senha # A senha deve ser hasheada em um projeto real, mas o requisito não pede
     )
-    
-    usuarios.append(novo_usuario)
+
+    # 3. Adiciona e commita no banco de dados
+    db.add(novo_usuario)
+    db.commit()
+    db.refresh(novo_usuario)
+
+    # 4. Retorna o usuário público
     return novo_usuario
 
+# Rota GET para listar todos os usuários
 @app.get("/usuarios", status_code=HTTPStatus.OK, response_model=List[UsuarioPublic])
-async def get_todos_usuarios():
+def get_todos_usuarios(db: Session = Depends(get_db)):
+    # 1. Consulta todos os usuários
+    usuarios = db.scalars(select(User)).all()
+    
+    # 2. Retorna a lista (vazia ou preenchida)
     return usuarios
+
+# Rota GET para buscar usuário pelo ID
+@app.get("/usuarios/{id}", response_model=UsuarioPublic, status_code=HTTPStatus.OK)
+def get_usuario_por_id(id: int, db: Session = Depends(get_db)):
+    # 1. Consulta o usuário pelo ID
+    usuario = db.scalar(select(User).where(User.id == id))
     
-@app.get("/usuarios/{nome_usuario}", response_model=UsuarioPublic, status_code=HTTPStatus.OK)
-async def get_usuario_por_nome(nome_usuario: str):
-    for usuario in usuarios:
-        if usuario.nome_usuario.lower() == nome_usuario.lower():
-            return usuario
-            
-    raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Usuário não encontrado")
+    # 2. Verifica se encontrou
+    if not usuario:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND,
+            detail="Usuário não encontrado"
+        )
+        
+    # 3. Retorna o usuário
+    return usuario
 
-@app.get("/usuarios/id/{id}", response_model=UsuarioPublic, status_code=HTTPStatus.OK)
-async def get_usuario_por_id(id: int):
-    for usuario in usuarios:
-        if usuario.id == id:
-            return usuario
-            
-    raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Usuário não encontrado")
+# Rota GET para buscar usuário pelo nome (A avaliação pede "Buscar usuário pelo nome")
+@app.get("/usuarios/nome/{nome_usuario}", response_model=UsuarioPublic, status_code=HTTPStatus.OK)
+def get_usuario_por_nome(nome_usuario: str, db: Session = Depends(get_db)):
+    # 1. Consulta o usuário pelo nome
+    usuario = db.scalar(select(User).where(User.nome_usuario == nome_usuario))
+    
+    # 2. Verifica se encontrou
+    if not usuario:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND,
+            detail="Usuário não encontrado"
+        )
+        
+    # 3. Retorna o usuário
+    return usuario
 
+# Rota PUT para atualizar um usuário
 @app.put("/usuarios/{id}", response_model=UsuarioPublic, status_code=HTTPStatus.OK)
-async def update_usuario(id: int, dados: BaseUsuario):
-    found_index = -1
-    for i, u in enumerate(usuarios):
-        if u.id == id:
-            found_index = i
-            break
+def update_usuario(id: int, dados: BaseUsuario, db: Session = Depends(get_db)):
+    # 1. Busca o usuário a ser atualizado
+    usuario = db.scalar(select(User).where(User.id == id))
+    
+    if not usuario:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND,
+            detail="Usuário não encontrado"
+        )
 
-    if found_index == -1:
-        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Usuário não encontrado")
-
-    for i, u in enumerate(usuarios):
-        if i != found_index and u.email == dados.email:
-             raise HTTPException(status_code=HTTPStatus.CONFLICT, detail="Já existe um usuário com este email")
-
-    usuario_atualizado = Usuario(
-        id=id,
-        nome_usuario=dados.nome_usuario,
-        email=dados.email,
-        senha=dados.senha
+    # 2. Validação de e-mail duplicado (excluindo o próprio usuário)
+    existing_user_with_email = db.scalar(
+        select(User).where(User.email == dados.email, User.id != id)
     )
-    
-    usuarios[found_index] = usuario_atualizado
-    return usuario_atualizado
+    if existing_user_with_email:
+        raise HTTPException(
+            status_code=HTTPStatus.CONFLICT,
+            detail="Já existe outro usuário com este email."
+        )
 
+    # 3. Atualiza os campos
+    usuario.nome_usuario = dados.nome_usuario
+    usuario.email = dados.email
+    usuario.senha = dados.senha
+    # O campo updated_at é atualizado automaticamente pelo `onupdate=func.now()` no models.py
+
+    # 4. Commita a transação
+    db.commit()
+    db.refresh(usuario)
+    
+    # 5. Retorna o usuário atualizado
+    return usuario
+
+# Rota DELETE para deletar um usuário
 @app.delete("/usuarios/{id}", response_model=UsuarioPublic, status_code=HTTPStatus.OK)
-async def delete_usuario(id: int):
-    if not usuarios:
-        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Não há usuários para excluir.")
-
-    found_index = -1
-    deleted_usuario = None
+def delete_usuario(id: int, db: Session = Depends(get_db)):
+    # 1. Busca o usuário a ser deletado
+    usuario = db.scalar(select(User).where(User.id == id))
     
-    for i, u in enumerate(usuarios):
-        if u.id == id:
-            found_index = i
-            deleted_usuario = u
-            break
+    if not usuario:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND,
+            detail="Usuário não encontrado"
+        )
 
-    if found_index == -1:
-        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Usuário não encontrado")
-
-    usuarios.pop(found_index)
-    return deleted_usuario
+    # 2. Deleta o usuário
+    db.delete(usuario)
+    db.commit()
+    
+    # 3. Retorna o usuário deletado (Requisito: retornar os dados do usuário deletado)
+    return usuario
