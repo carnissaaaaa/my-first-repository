@@ -2,7 +2,6 @@ from pydantic import BaseModel, EmailStr, field_validator
 from typing import List
 from datetime import datetime
 
-# Schemas de Receita (Mantidos conforme sua instrução)
 class BaseReceita(BaseModel):
     nome: str
     ingredientes: List[str]
@@ -11,7 +10,6 @@ class BaseReceita(BaseModel):
 class Receita(BaseReceita):
     id: int 
     
-# Schema para criação e atualização (recebe a senha)
 class BaseUsuario(BaseModel):
     nome_usuario: str
     email: EmailStr
@@ -27,7 +25,6 @@ class BaseUsuario(BaseModel):
             raise ValueError('A senha deve conter pelo menos um número.')
         return v
 
-# Schema que representa o modelo do banco de dados (inclui ID e datas)
 class Usuario(BaseUsuario):
     id: int
     created_at: datetime
@@ -36,7 +33,6 @@ class Usuario(BaseUsuario):
     class Config:
         from_attributes = True
 
-# Schema para retorno público (não inclui a senha)
 class UsuarioPublic(BaseModel):
     id: int
     nome_usuario: str

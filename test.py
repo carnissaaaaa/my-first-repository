@@ -2,7 +2,6 @@ from sqlalchemy.orm import Session
 from models import User
 from database import create_db_and_tables, engine
 
-# Cria as tabelas no banco de dados em memória
 create_db_and_tables()
 
 with Session(engine) as session:

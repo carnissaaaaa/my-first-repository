@@ -10,7 +10,6 @@ from database import get_db
 
 app = FastAPI()
 
-# Variáveis em memória para Receitas (Mantidas conforme sua instrução)
 receitas: List[Receita] = [
     Receita(id=1, nome="Bolo de Chocolate", ingredientes=["farinha", "açúcar", "chocolate em pó", "ovos", "leite", "óleo"], modo_de_preparo="Misture tudo e asse."),
     Receita(id=2, nome="Brigadeiro", ingredientes=["leite condensado", "chocolate em pó", "manteiga"], modo_de_preparo="Misture no fogo até desgrudar da panela."),
@@ -20,7 +19,6 @@ receitas: List[Receita] = [
     Receita(id=6, nome="Pão de Queijo", ingredientes=["polvilho doce", "queijo minas", "leite", "óleo", "ovos", "sal"], modo_de_preparo="Misture os ingredientes, faça bolinhas e asse.")
 ]
 
-# Rotas de Receitas (Mantidas conforme sua instrução)
 @app.get("/receitas", response_model=List[Receita], status_code=HTTPStatus.OK)
 async def get_receitas():
     return receitas
@@ -114,9 +112,7 @@ async def delete_receita(receita_id: int):
     receitas.pop(found_index)
     return {"message": f"Receita '{deleted_receita.nome}' (ID: {deleted_receita.id}) foi deletada com sucesso."}
 
-# Rotas de Usuários (Corrigidas para usar SQLAlchemy)
 
-# Rota POST para criar um novo usuário
 @app.post("/usuarios", response_model=UsuarioPublic, status_code=HTTPStatus.CREATED)
 def create_usuario(dados: BaseUsuario, db: Session = Depends(get_db)):
     # 1. Validação de e-mail duplicado (Requisito: Email único)
@@ -142,7 +138,6 @@ def create_usuario(dados: BaseUsuario, db: Session = Depends(get_db)):
     # 4. Retorna o usuário público
     return novo_usuario
 
-# Rota GET para listar todos os usuários
 @app.get("/usuarios", status_code=HTTPStatus.OK, response_model=List[UsuarioPublic])
 def get_todos_usuarios(db: Session = Depends(get_db)):
     # 1. Consulta todos os usuários
@@ -151,7 +146,6 @@ def get_todos_usuarios(db: Session = Depends(get_db)):
     # 2. Retorna a lista (vazia ou preenchida)
     return usuarios
 
-# Rota GET para buscar usuário pelo ID
 @app.get("/usuarios/{id}", response_model=UsuarioPublic, status_code=HTTPStatus.OK)
 def get_usuario_por_id(id: int, db: Session = Depends(get_db)):
     # 1. Consulta o usuário pelo ID
@@ -167,7 +161,6 @@ def get_usuario_por_id(id: int, db: Session = Depends(get_db)):
     # 3. Retorna o usuário
     return usuario
 
-# Rota GET para buscar usuário pelo nome (A avaliação pede "Buscar usuário pelo nome")
 @app.get("/usuarios/nome/{nome_usuario}", response_model=UsuarioPublic, status_code=HTTPStatus.OK)
 def get_usuario_por_nome(nome_usuario: str, db: Session = Depends(get_db)):
     # 1. Consulta o usuário pelo nome
@@ -183,7 +176,6 @@ def get_usuario_por_nome(nome_usuario: str, db: Session = Depends(get_db)):
     # 3. Retorna o usuário
     return usuario
 
-# Rota PUT para atualizar um usuário
 @app.put("/usuarios/{id}", response_model=UsuarioPublic, status_code=HTTPStatus.OK)
 def update_usuario(id: int, dados: BaseUsuario, db: Session = Depends(get_db)):
     # 1. Busca o usuário a ser atualizado
@@ -218,7 +210,6 @@ def update_usuario(id: int, dados: BaseUsuario, db: Session = Depends(get_db)):
     # 5. Retorna o usuário atualizado
     return usuario
 
-# Rota DELETE para deletar um usuário
 @app.delete("/usuarios/{id}", response_model=UsuarioPublic, status_code=HTTPStatus.OK)
 def delete_usuario(id: int, db: Session = Depends(get_db)):
     # 1. Busca o usuário a ser deletado
